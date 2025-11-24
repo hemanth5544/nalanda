@@ -26,10 +26,32 @@ const loginValidation = [
     .notEmpty().withMessage('Password is required')
 ];
 
+const addBookValidation = [
+  body('title')
+    .trim()
+    .notEmpty().withMessage('Book title is required'),
+  body('author')
+    .trim()
+    .notEmpty().withMessage('Author name is required'),
+  body('isbn')
+    .trim()
+    .notEmpty().withMessage('ISBN is required'),
+  body('publicationDate')
+    .notEmpty().withMessage('Publication date is required')
+    .isISO8601().withMessage('Please provide a valid date'),
+  body('genre')
+    .trim()
+    .notEmpty().withMessage('Genre is required'),
+  body('totalCopies')
+    .notEmpty().withMessage('Number of copies is required')
+    .isInt({ min: 0 }).withMessage('Total copies must be a non-negative integer')
+];
+
 
 
 module.exports = {
   registerValidation,
   loginValidation,
+  addBookValidation,
 
 };
