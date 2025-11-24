@@ -3,6 +3,10 @@ const express = require('express');
 const connectDB = require('./config/database');
 const { apiReference } =require ('@scalar/express-api-reference');
 const path = require('path');
+const cors = require('cors');
+
+const app = express();
+
 app.use('/openapi.json', express.static(path.join(__dirname, '../openapi.json')));
 
 app.use(
@@ -15,9 +19,27 @@ app.use(
 
 
 
-const app = express();
-
 connectDB();
+
+
+
+app.use(cors());
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+
+app.use('/api/auth', authRoutes);
+
+
+app.use((err, req, res, next) => {
+  console.error(err.stack);
+  res.status(500).json({
+    success: false,
+    message: 'Something went wrong!',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
+  });
+});
+
 
 
 const PORT = process.env.PORT || 5000;
