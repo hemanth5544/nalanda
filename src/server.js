@@ -4,8 +4,12 @@ const connectDB = require('./config/database');
 const { apiReference } =require ('@scalar/express-api-reference');
 const path = require('path');
 const cors = require('cors');
-
 const app = express();
+
+
+const authRoutes = require('./routes/authRoutes');
+const bookRoutes = require('./routes/bookRoutes');
+
 
 app.use('/openapi.json', express.static(path.join(__dirname, '../openapi.json')));
 
@@ -19,6 +23,7 @@ app.use(
 
 
 
+
 connectDB();
 
 
@@ -29,7 +34,7 @@ app.use(express.urlencoded({ extended: true }));
 
 
 app.use('/api/auth', authRoutes);
-
+app.use('/api/books', bookRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
