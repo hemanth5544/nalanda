@@ -47,11 +47,21 @@ const addBookValidation = [
     .isInt({ min: 0 }).withMessage('Total copies must be a non-negative integer')
 ];
 
+const borrowBookValidation = [
+  body('bookId')
+    .notEmpty().withMessage('Book ID is required')
+    .isMongoId().withMessage('Invalid book ID')
+];
 
+const mongoIdValidation = [
+  param('id')
+    .isMongoId().withMessage('Invalid ID format')
+];
 
 module.exports = {
   registerValidation,
   loginValidation,
   addBookValidation,
-
+  borrowBookValidation,
+  mongoIdValidation
 };
