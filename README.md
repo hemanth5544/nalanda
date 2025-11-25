@@ -1,4 +1,7 @@
-# Nalanda Library Management System https://nalanda-humen.up.railway.app/reference#post/apiauthregister
+# Nalanda Library Management System
+
+[API Documentation](https://nalanda-humen.up.railway.app/reference#post/apiauthregister).
+
 
 A comprehensive backend system for a library management application with RESTful and GraphQL APIs, built with Node.js, Express, and MongoDB.
 
