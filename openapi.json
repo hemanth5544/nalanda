@@ -10,7 +10,7 @@
   },
   "servers": [
     {
-      "url": "http://localhost:5000",
+      "url": "https://nalanda-humen.up.railway.app",
       "description": "Local Development Server"
     }
   ],
