@@ -5,10 +5,20 @@ const { apiReference } =require ('@scalar/express-api-reference');
 const path = require('path');
 const cors = require('cors');
 const app = express();
+const { graphqlHTTP } = require('express-graphql');
 
 
 const authRoutes = require('./routes/authRoutes');
 const bookRoutes = require('./routes/bookRoutes');
+const borrowingRoutes = require('./routes/borrowingRoutes');
+const reportRoutes = require('./routes/reportRoutes');
+
+
+
+//---------------- GraphQL Setup ----------------//
+const schema = require('./graphql/schema');
+const resolvers = require('./graphql/resolvers');
+const { getGraphQLContext } = require('./graphql/context');
 
 
 app.use('/openapi.json', express.static(path.join(__dirname, '../openapi.json')));
@@ -23,8 +33,6 @@ app.use(
 
 
 
-const borrowingRoutes = require('./routes/borrowingRoutes');
-const reportRoutes = require('./routes/reportRoutes');
 
 
 connectDB();
@@ -41,6 +49,32 @@ app.use('/api/books', bookRoutes);
 app.use('/api/borrowing', borrowingRoutes);
 app.use('/api/reports', reportRoutes);
 
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Welcome to Nalanda Library Management System API',
+    version: '1.0.0',
+    endpoints: {
+      rest: {
+        auth: '/api/auth',
+        books: '/api/books',
+        borrowing: '/api/borrowing',
+        reports: '/api/reports'
+      },
+      graphql: '/graphql'
+    }
+  });
+});
+app.use('/graphql', graphqlHTTP((req) => ({
+  schema,
+  rootValue: resolvers,
+  context: getGraphQLContext(req),
+  graphiql: process.env.NODE_ENV === 'development',
+  customFormatErrorFn: (error) => ({
+    message: error.message,
+    locations: error.locations,
+    path: error.path
+  })
+})));
 app.use((err, req, res, next) => {
   console.error(err.stack);
   res.status(500).json({
@@ -58,7 +92,6 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`REST API: http://localhost:${PORT}/api`);
   console.log(`REST API: http://localhost:${PORT}/reference`);
-  console.log(`GraphQL API: http://localhost:${PORT}/graphql`);
 });
 
 module.exports = app;

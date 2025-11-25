@@ -1,0 +1,403 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Nalanda Library Management System API",
+    "description": "A full-featured library management backend with REST and GraphQL APIs. Features user authentication (JWT + AES encryption), book management, borrowing system, and analytics reports.",
+    "version": "1.0.0",
+    "contact": {
+      "name": "Nalanda Library API Support"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:5000",
+      "description": "Local Development Server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "bearerAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "description": "Encrypted JWT token obtained from /api/auth/login or /api/auth/register"
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "success": { "type": "boolean", "example": false },
+          "message": { "type": "string" },
+          "errors": { "type": "array", "items": { "type": "string" } }
+        }
+      },
+      "User": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "name": { "type": "string" },
+          "email": { "type": "string" },
+          "role": { "type": "string", "enum": ["Member", "Admin"] },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Book": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "title": { "type": "string" },
+          "author": { "type": "string" },
+          "isbn": { "type": "string" },
+          "publicationDate": { "type": "string", "format": "date" },
+          "genre": { "type": "string" },
+          "totalCopies": { "type": "integer" },
+          "availableCopies": { "type": "integer" },
+          "createdAt": { "type": "string", "format": "date-time" }
+        }
+      },
+      "Borrowing": {
+        "type": "object",
+        "properties": {
+          "_id": { "type": "string" },
+          "user": { "$ref": "#/components/schemas/User" },
+          "book": { "$ref": "#/components/schemas/Book" },
+          "borrowDate": { "type": "string", "format": "date-time" },
+          "dueDate": { "type": "string", "format": "date-time" },
+          "returnDate": { "type": "string", "format": "date-time", "nullable": true },
+          "status": { "type": "string", "enum": ["Borrowed", "Returned", "Overdue"] }
+        }
+      }
+    }
+  },
+  "security": [
+    {
+      "bearerAuth": []
+    }
+  ],
+  "paths": {
+    "/": {
+      "get": {
+        "summary": "API Welcome Message",
+        "responses": {
+          "200": {
+            "description": "Welcome message with available endpoints",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Welcome to Nalanda Library Management System API",
+                  "version": "1.0.0",
+                  "endpoints": {
+                    "rest": {
+                      "auth": "/api/auth",
+                      "books": "/api/books",
+                      "borrowing": "/api/borrowing",
+                      "reports": "/api/reports"
+                    },
+                    "graphql": "/graphql"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+
+    "/api/auth/register": {
+      "post": {
+        "summary": "Register a new user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["name", "email", "password"],
+                "properties": {
+                  "name": { "type": "string" },
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string", "minLength": 6 },
+                  "role": { "type": "string", "enum": ["Member", "Admin"], "default": "Member" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "User registered successfully",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "token": "encrypted_jwt_token", "user": { "_id": "...", "name": "John Doe", "email": "john@example.com", "role": "Member" } }
+              }
+            }
+          },
+          "400": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+
+    "/api/auth/login": {
+      "post": {
+        "summary": "Login user",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["email", "password"],
+                "properties": {
+                  "email": { "type": "string", "format": "email" },
+                  "password": { "type": "string" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Login successful",
+            "content": {
+              "application/json": {
+                "example": { "success": true, "token": "encrypted_jwt_token", "user": { "_id": "...", "name": "John Doe", "role": "Member" } }
+              }
+            }
+          },
+          "401": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      }
+    },
+
+    "/api/books": {
+      "get": {
+        "summary": "List all books with pagination and filtering",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [
+          { "name": "page", "in": "query", "schema": { "type": "integer", "default": 1 } },
+          { "name": "limit", "in": "query", "schema": { "type": "integer", "default": 10 } },
+          { "name": "search", "in": "query", "schema": { "type": "string" } },
+          { "name": "genre", "in": "query", "schema": { "type": "string" } },
+          { "name": "author", "in": "query", "schema": { "type": "string" } }
+        ],
+        "responses": {
+          "200": {
+            "description": "Paginated list of books",
+            "content": {
+              "application/json": {
+                "example": {
+                  "books": [{ "_id": "123", "title": "The Great Gatsby", "author": "F. Scott Fitzgerald", "availableCopies": 4 }],
+                  "total": 42,
+                  "page": 1,
+                  "limit": 10
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "Add a new book (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["title", "author", "isbn", "publicationDate", "genre", "totalCopies"],
+                "properties": {
+                  "title": { "type": "string" },
+                  "author": { "type": "string" },
+                  "isbn": { "type": "string" },
+                  "publicationDate": { "type": "string", "format": "date" },
+                  "genre": { "type": "string" },
+                  "totalCopies": { "type": "integer", "minimum": 1 }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Book created successfully" },
+          "403": { "description": "Admin access required" }
+        }
+      }
+    },
+
+    "/api/books/{id}": {
+      "get": {
+        "summary": "Get a single book",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Book details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Book" } } } },
+          "404": { "$ref": "#/components/schemas/ErrorResponse" }
+        }
+      },
+      "put": {
+        "summary": "Update a book (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "title": { "type": "string" },
+                  "author": { "type": "string" },
+                  "isbn": { "type": "string" },
+                  "publicationDate": { "type": "string", "format": "date" },
+                  "genre": { "type": "string" },
+                  "totalCopies": { "type": "integer" }
+                }
+              }
+            }
+          }
+        },
+        "responses": { "200": { "description": "Book updated" }, "403": { "description": "Admin only" } }
+      },
+      "delete": {
+        "summary": "Delete a book (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "id", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": { "200": { "description": "Book deleted" }, "403": { "description": "Admin only" } }
+      }
+    },
+
+    "/api/borrowing/borrow": {
+      "post": {
+        "summary": "Borrow a book",
+        "security": [{ "bearerAuth": [] }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["bookId"],
+                "properties": { "bookId": { "type": "string" } }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": { "description": "Book borrowed successfully" },
+          "400": { "description": "Book not available or already borrowed" }
+        }
+      }
+    },
+
+    "/api/borrowing/return/{borrowingId}": {
+      "put": {
+        "summary": "Return a borrowed book",
+        "security": [{ "bearerAuth": [] }],
+        "parameters": [{ "name": "borrowingId", "in": "path", "required": true, "schema": { "type": "string" } }],
+        "responses": {
+          "200": { "description": "Book returned successfully" },
+          "404": { "description": "Borrowing record not found" }
+        }
+      }
+    },
+
+    "/api/borrowing/history": {
+      "get": {
+        "summary": "Get user's borrowing history",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "List of user's borrowings",
+            "content": { "application/json": { "schema": { "type": "array", "items": { "$ref": "#/components/schemas/Borrowing" } } } }
+          }
+        }
+      }
+    },
+
+    "/api/borrowing/all": {
+      "get": {
+        "summary": "Get all borrowing records (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": { "description": "All borrowings" },
+          "403": { "description": "Admin access required" }
+        }
+      }
+    },
+
+    "/api/reports/most-borrowed": {
+      "get": {
+        "summary": "Most borrowed books report (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Top borrowed books",
+            "content": {
+              "application/json": {
+                "example": [
+                  { "book": { "title": "1984", "author": "George Orwell" }, "borrowCount": 27 }
+                ]
+              }
+            }
+          },
+          "403": { "description": "Admin only" }
+        }
+      }
+    },
+
+    "/api/reports/active-members": {
+      "get": {
+        "summary": "Most active members report (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Active members ranked by borrowing activity"
+          },
+          "403": { "description": "Admin only" }
+        }
+      }
+    },
+
+    "/api/reports/book-availability": {
+      "get": {
+        "summary": "Book availability summary (Admin only)",
+        "security": [{ "bearerAuth": [] }],
+        "responses": {
+          "200": {
+            "description": "Summary of total, available, and borrowed books by genre"
+          },
+          "403": { "description": "Admin only" }
+        }
+      }
+    },
+
+    "/graphql": {
+      "post": {
+        "summary": "GraphQL Endpoint",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "query": { "type": "string" },
+                  "variables": { "type": "object" }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "GraphQL response" }
+        }
+      },
+      "get": {
+        "summary": "GraphiQL IDE (Development only)",
+        "responses": {
+          "200": { "description": "Interactive GraphQL playground" }
+        }
+      }
+    }
+  }
+}
