@@ -24,6 +24,7 @@ app.use(
 
 
 const borrowingRoutes = require('./routes/borrowingRoutes');
+const reportRoutes = require('./routes/reportRoutes');
 
 
 connectDB();
@@ -38,6 +39,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use('/api/auth', authRoutes);
 app.use('/api/books', bookRoutes);
 app.use('/api/borrowing', borrowingRoutes);
+app.use('/api/reports', reportRoutes);
 
 app.use((err, req, res, next) => {
   console.error(err.stack);
